@@ -38,6 +38,7 @@ GFW在拥有了这些IP包之后，要做一个艰难的决定，那就是到底
 总的来说，GFW做协议分析有两个不同的目的。第一个目的是防止不和谐内容的传播，比如说使用Google搜索了“不该”搜索的关键字。第二个目的是防止使用翻墙工具绕过GFW的审查。对于GFW具体是怎么达到目的的，也就是如何防止不和谐内容传播的就牵涉到对HTTP协议和DNS协议等几个协议的明文审查。大体的做法是这样的。
 
 ![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2017.06.42.png)
+
 像HTTP这样的协议会有非常明显的特征供检测，所以第一步就没什么好说的了。当GFW发现了包是HTTP的包之后就会按照HTTP的协议规则拆包。这个拆包过程是GFW按照它对于协议的理解来做的。比如说，从HTTP的GET请求中取得请求的URL。然后GFW拿到这个请求的URL去与关键字做匹配，比如查找Twitter是否在请求的URL中。为什么有拆包这个过程？首先，拆包之后可以更精确的打击，防止误杀。另外可能预先做拆包，比全文匹配更节省资源。其次，xiaoxia和liruqi同学的[jjproxy](https://github.com/liruqi/jjproxy)的核心就是基于GFW的一个HTTP拆包的漏洞，当然这个bug已经被修复了。其原理就是GFW在拆解HTTP包的时候没有处理有多出来的\r\n这样的情况，但是你访问的google.com却可以正确处理额外的\r\n的情况。从这个例子中可以证明，GFW还是先去理解协议，然后才做关键字匹配的。关键字匹配应该就是使用了一些高效的正则表达式算法，没有什么可以讨论的。
 
 HTTP代理和SOCKS代理，这两种明文的代理都可以被GFW识别。之前笔者认为GFW可以在识别到HTTP代理和SOCKS代理之后，再拆解其内部的HTTP协议的正文。也就是做两次拆包。但是分析发现，HTTP代理的关键字列表和HTTP的关键字列表是不一样的，所以笔者现在认为HTTP代理协议和SOCKS代理协议是当作单独的协议来处理的，并不是拆出载荷的HTTP请求再进行分析的。
@@ -149,21 +150,23 @@ HTTPS间歇性丢包
 VPN与SOCKS代理的另外一个主要区别是应用程序是如何使用上代理去访问国外的服务器的。先来看不加代理的时候，应用程序是如何访问网络的。
 
 应用程序把IP包交给操作系统，操作系统会去决定把包用机器上的哪块网卡发出去。VPN的客户端对于操作系统来说就是一个虚拟出来的网卡。应用程序完全不用知道VPN客户端的存在，操作系统甚至也不需要区分VPN客户端与普通网卡的区别。
+
 ![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.32.28.png)
+
 VPN客户端在启动之后会把操作系统的缺省路由改成自己。这样所有的IP包都会经由这块虚拟的网卡发出去。这样VPN就能够再打包成加密的流量发出去（当然线路还是之前的电信线路），发回去的加密流量再解密拆包交还给操作系统。
 
 SOCKS代理等应用层的代理则不同。其流量走不走代理的线路并不是由操作系统使用路由表选择网卡来决定的，而是在应用程序里自己做的。也就是说，对于操作系统来说，使用SOCKS代理的TCP连接和不使用SOCKS代理的TCP连接并没有任何的不同。应用程序自己去选择是直接与目标服务器建立连接，还是与SOCKS代理服务器建立TCP连接，然后由SOCKS代理服务器去建立第二个TCP连接，两个TCP连接的数据由代理服务器中转。
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.32.8.png)
+
+![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.32.08.png)
 
 关于VPN/SOCKS代理，可以参见我博客上的文章：[http://fqrouter.tumblr.com/post/51474945203/socks-vpn](http://fqrouter.tumblr.com/post/51474945203/socks-vpn)
 
 绕道法的翻墙原理就是这些了，相对来说非常简单。其针对的都是GFW的分析那一步，通过加密使得GFW无法分析出流量的原文从而让GFW放行。但是GFW最近的升级表明，GFW虽然无法解密这些加密的流量，但是GFW可以结合流量与其他协议特征探测出这些流量是不是“翻墙”的，然后就直接暴力的切断。绕道法的下一步发展就是要从原理弄明白，GFW是如何分析出翻墙流量的，从而降低自身的流量特征避免上短名单被协议分析，或者通过混淆协议把自己伪装成其他的无害流量。
 
-0x03 资源链接：
+0x03 其他资源链接：
 -----------
 GFW翻墙小结[http://wsgzao.github.io/post/fq/](http://wsgzao.github.io/post/fq/)
 shadowsocks[http://bbs.ihei5.com/thread-344353-1-1.html](http://bbs.ihei5.com/thread-344353-1-1.html)
-vpn[http://zhangge.net/4586.html](http://zhangge.net/4586.html)
-个人结合自己需要合理选择……
+以及各种VPN个人结合自己需要合理选择……
  
  
