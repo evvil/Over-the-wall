@@ -85,9 +85,9 @@ GFW还会过滤电驴（ed2k）协议中的查询内容。因为ed2k还有一个
 
 GFW的第二个目的是封杀翻墙软件。为了达到这个目的GFW采取的手段更加暴力。原因简单，对于HTTP协议的封杀如果做不好会影响互联网的正常运作，GFW与互联网是共生的关系，它不会做威胁自己存在的事情。但是对于TOR这样的几乎纯粹是为翻墙而存在的协议，只要检测出来就是格杀勿论的了。GFW具体是如何封杀各种翻墙协议的，我也不是很清楚，事态仍然在不断更新中。但是举个例子来证明GFW的高超技术。
 
-比如GFW对TOR的自动封杀，体现了GFW尽最大努力去理解协议本身。根据这篇博客[https://blog.torproject.org/blog/knock-knock-knockin-bridges-doors](https://blog.torproject.org/blog/knock-knock-knockin-bridges-doors)。使用中国的IP去连接一个美国的TOR网桥，会被GFW发现。然后GFW回头（15分钟之后）会亲自假装成客户端，用TOR的协议去连接那个网桥。如果确认是TOR的网桥，则会封当时的那个端口。换了端口之后，可以用一段时间，然后又会被封。这表现出了GFW对于协议的高超检测能力，可以从国际出口的流量中敏锐地发现你连接的TOR网桥。据TOR的同志说是因为TOR协议中的握手过程具有太明显的特征了。另外一点就表现了GFW的不辞辛劳，居然会自己伪装成客户端过去连连看。
+比如GFW对TOR的自动封杀，体现了GFW尽最大努力去理解协议本身,可以看这篇博客[https://blog.torproject.org/blog/knock-knock-knockin-bridges-doors](https://blog.torproject.org/blog/knock-knock-knockin-bridges-doors)。使用中国的IP去连接一个美国的TOR网桥，会被GFW发现。然后GFW回头（15分钟之后）会亲自假装成客户端，用TOR的协议去连接那个网桥。如果确认是TOR的网桥，则会封当时的那个端口。换了端口之后，可以用一段时间，然后又会被封。这表现出了GFW对于协议的高超检测能力，可以从国际出口的流量中敏锐地发现你连接的TOR网桥。据TOR的同志说是因为TOR协议中的握手过程具有太明显的特征了。另外一点就表现了GFW的不辞辛劳，居然会自己伪装成客户端过去连连看。
 
-关于GFW是如何识别与封锁翻墙服务器的，最近写了一篇文章提出我的猜想，大家可以去看看：[http://fqrouter.tumblr.com/post/45969604783/gfw](http://fqrouter.tumblr.com/post/45969604783/gfw)
+关于GFW是如何识别与封锁翻墙服务器的，最近写了一篇文章提出我的猜想，大家可以看看：[http://fqrouter.tumblr.com/post/45969604783/gfw](http://fqrouter.tumblr.com/post/45969604783/gfw)
 
 最近发现GFW对OpenVPN和SSL证书已经可以做到准实时的封IP（端口）。原理应该是离线做的深包分析，然后提取出可疑的IP列表，经过人工确认之后封IP。因为OpenVPN有显著的协议的特征，而且基本不用于商业场景所以很容易确认是翻墙服务。但是SSL也就是HTTPS用的加密协议也能基于“证书”做过滤不得不令人感到敬畏了。Shadowsocks的作者Clowwindy为此专门撰文[“为什么不应该用SSL翻墙“](https://gist.github.com/clowwindy/5947691)。
 
@@ -167,6 +167,6 @@ SOCKS代理等应用层的代理则不同。其流量走不走代理的线路并
 -----------
 1. GFW翻墙小结[http://wsgzao.github.io/post/fq/](http://wsgzao.github.io/post/fq/)
 2. shadowsocks[http://bbs.ihei5.com/thread-344353-1-1.html](http://bbs.ihei5.com/thread-344353-1-1.html)
- 以及各种VPN个人结合自己需要合理选择……
+3. 各种VPN个人结合自己需求合理选择……
  
  
