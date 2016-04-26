@@ -128,19 +128,24 @@ HTTPS间歇性丢包
 
 基于绕道法的翻墙方式无论是VPN还是SOCKS代理，原理都是类似的。都是以国外有一个代理服务器为前提，然后你与代理服务器通信，代理服务器再与目标服务器通信。
 
+![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.33.29.png)
+
 绕道法对于IP封锁来说，因为最终的IP包是由代理服务器在墙外发出的，所以国内骨干路由封IP并不会产生影响。对于TCP重置来说，因为TCP重置是以入侵检测为前提的，客户端与代理之间的加密通信规避了入侵检测，使得TCP重置不会被触发。
 
 但是对于反DNS污染来说，VPN和SOCKS代理却有不同。基于VPN的翻墙方法，得到正确的DNS解析的结果需要设置一个国外的没有被污染的DNS服务器。然后发UDP请求去解析域名的时候，VPN会用绕道的方式让UDP请求不被劫持地通过GFW。
+
+![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.33.19.png)
 
 但是SOCKS代理和HTTP代理这些更上层的代理协议则可以选择不同的方式。因为代理与应用之间有更紧密的关系，应用程序比如浏览器可以把要访问的服务器的域名直接告诉本地的代理。然后SOCKS代理可以选择不在本地做解析，直接把请求发给墙外的代理服务器。在代理服务器与目标服务器做连接的时候再在代理服务器上做DNS解析，从而避开了GFW的DNS劫持。
 
 VPN与SOCKS代理的另外一个主要区别是应用程序是如何使用上代理去访问国外的服务器的。先来看不加代理的时候，应用程序是如何访问网络的。
 
 应用程序把IP包交给操作系统，操作系统会去决定把包用机器上的哪块网卡发出去。VPN的客户端对于操作系统来说就是一个虚拟出来的网卡。应用程序完全不用知道VPN客户端的存在，操作系统甚至也不需要区分VPN客户端与普通网卡的区别。
-
+![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.33.28.png)
 VPN客户端在启动之后会把操作系统的缺省路由改成自己。这样所有的IP包都会经由这块虚拟的网卡发出去。这样VPN就能够再打包成加密的流量发出去（当然线路还是之前的电信线路），发回去的加密流量再解密拆包交还给操作系统。
 
 SOCKS代理等应用层的代理则不同。其流量走不走代理的线路并不是由操作系统使用路由表选择网卡来决定的，而是在应用程序里自己做的。也就是说，对于操作系统来说，使用SOCKS代理的TCP连接和不使用SOCKS代理的TCP连接并没有任何的不同。应用程序自己去选择是直接与目标服务器建立连接，还是与SOCKS代理服务器建立TCP连接，然后由SOCKS代理服务器去建立第二个TCP连接，两个TCP连接的数据由代理服务器中转。
+![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.33.8.png)
 
 关于VPN/SOCKS代理，可以参见我博客上的文章：[http://fqrouter.tumblr.com/post/51474945203/socks-vpn](http://fqrouter.tumblr.com/post/51474945203/socks-vpn)
 
