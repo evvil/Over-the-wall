@@ -165,8 +165,8 @@ SOCKS代理等应用层的代理则不同。其流量走不走代理的线路并
 
 0x03 其他资源：
 -----------
-*GFW翻墙小结[http://wsgzao.github.io/post/fq/](http://wsgzao.github.io/post/fq/)
-*shadowsocks[http://bbs.ihei5.com/thread-344353-1-1.html](http://bbs.ihei5.com/thread-344353-1-1.html)
-*以及各种VPN个人结合自己需要合理选择……
+1. GFW翻墙小结[http://wsgzao.github.io/post/fq/](http://wsgzao.github.io/post/fq/)
+2.shadowsocks[http://bbs.ihei5.com/thread-344353-1-1.html](http://bbs.ihei5.com/thread-344353-1-1.html)
+ 以及各种VPN个人结合自己需要合理选择……
  
  
