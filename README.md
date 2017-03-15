@@ -14,17 +14,17 @@ GFW是一个分布式的入侵检测系统，其检测过程可以再进一步�
 
 所以，GFW机器检测的第一步就是重建出一个字节流。那么GFW是如何拿到原始的IP包的呢？真正的GFW部署方式，外人根本无从得知。据猜测，GFW是部署在国家的出口路由器的旁路上，用“分光”的方式把IP包复制一份到另外一根光纤上，从而拿到所有进出国境的IP包。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-25%20at%2016.01.44.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-25%20at%2016.01.44.png)
 
 对于GFW到底在哪这个话题，最近有国外友人表达了兴趣[https://github.com/mothran/mongol](https://github.com/mothran/mongol)。笔者在前人的基础上写了一个更完备的探测工具[https://github.com/fqrouter/qiang](https://github.com/fqrouter/qiang)。其原理是基于IP协议的一个特性叫TTL。IP包在每经过一次路由的时候，路由器都会把IP包的TTL减去1。如果TTL到零了，路由器就不会再把IP包发给下一级路由。然后我们知道GFW会在监听到不和谐的IP包之后发回RST包来重置TCP连接。那么通过设置不同的TTL就可以知道从你的电脑，到GFW之间经过了几个路由器。比如说TTL设置成9不触发RST，但是10就触发RST，那么到GFW就是经过了10个路由器。另外一个IP协议的特性是当TTL耗尽的时候，路由器应该发回一个TTL-EXCEEDED的ICMP包，并把自己的IP地址设置成SRC（来源）。结合这两点，就可以探测出IP包是到了IP地址为什么的路由器之后才被GFW检测到。有了IP地址之后，再结合IP地址地理位置的数据库就可以知道其地理位置。据说，得出的位置大概是这样的：
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-25%20at%2016.15.45.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-25%20at%2016.15.45.png)
 
 但是这里检测出来的IP到底是GFW的还是骨干路由器的？更有可能的是骨干路由器的IP。GFW做为一个设备用“分光”的方式挂在主干路由器旁边做入侵检测。无论如何，GFW通过某种神奇的方式，可以拿到你和国外服务器之间来往的所有的IP包，这点是肯定的。更严谨的理论研究有：[Internet Censorship in China: Where Does the Filtering Occur?](http://pam2011.gatech.edu/papers/pam2011--Xu.pdf)
 
 GFW在拥有了这些IP包之后，要做一个艰难的决定，那就是到底要不要让你和服务器之间的通信继续下去。GFW不能太过于激进，毕竟全国性的不能访问国外的网站是违反GFW自身存在价值的。GFW就需要在理解了IP包背后代表的含义之后，再来决定是不是可以安全的阻断你和国外服务器之间的连接。这种理解就要建立了前面说的“重建”这一步的基础上。大概用图表达一下重建是在怎么一回事：
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2017.06.08.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-26%20at%2017.06.08.png)
 
 重建需要做的事情就是把IP包1中的GET/inde和IP包2中的x.html和IP包3中的HTTP/1.1拼到一起变成GET/index.htmlHTTP/1.1。拼出来的数据可能是纯文本的，也可能是二进制加密的协议内容。具体是什么是你和服务器之间约定好的。GFW做为窃听者需要猜测才知道你们俩之间的交谈内容。对于HTTP协议就非常容易猜测了，因为HTTP的协议是标准化的，而且是未加密的。所以GFW可以在重建之后很容易的知道，你使用了HTTP协议，访问的是什么网站。
 
@@ -37,7 +37,7 @@ GFW在拥有了这些IP包之后，要做一个艰难的决定，那就是到底
 
 总的来说，GFW做协议分析有两个不同的目的。第一个目的是防止不和谐内容的传播，比如说使用Google搜索了“不该”搜索的关键字。第二个目的是防止使用翻墙工具绕过GFW的审查。对于GFW具体是怎么达到目的，也就是如何防止不和谐内容传播的就牵涉到对HTTP协议和DNS协议等几个协议的明文审查。大体的做法是这样的。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2017.06.42.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-26%20at%2017.06.42.png)
 
 像HTTP这样的协议会有非常明显的特征供检测，所以第一步就没什么好说的了。当GFW发现了包是HTTP的包之后就会按照HTTP的协议规则拆包。这个拆包过程是GFW按照它对于协议的理解来做的。比如说，从HTTP的GET请求中取得请求的URL。然后GFW拿到这个请求的URL去与关键字做匹配，比如查找Twitter是否在请求的URL中。为什么有拆包这个过程？首先，拆包之后可以更精确的打击，防止误杀。另外可能预先做拆包，比全文匹配更节省资源。其次，xiaoxia和liruqi同学的[jjproxy](https://github.com/liruqi/jjproxy)的核心就是基于GFW的一个HTTP拆包的漏洞，当然这个bug已经被修复了。其原理就是GFW在拆解HTTP包的时候没有处理有多出来的\r\n这样的情况，但是你访问的google.com却可以正确处理额外的\r\n的情况。从这个例子中可以证明，GFW还是先去理解协议，然后才做关键字匹配的。关键字匹配应该就是使用了一些高效的正则表达式算法，没有什么可以讨论的。
 
@@ -103,19 +103,19 @@ GFW的重建过程和协议分析的过程需要耐心的试探才能大概推�
 
 其实现方式是把无效的路由黑洞加入到主干路由器的路由表中，然后让这些主干网上的路由器去帮GFW把到指定IP的包给丢弃掉。路由器的路由表是动态更新的，使用的协议是BGP协议。GFW只需要维护一个被封的IP列表，然后用BGP协议广播出去就好了。然后国内主干网上的路由器都好像变成了GFW的一份子那样，成为了帮凶。如果我们使用traceroute去检查这种被全局封锁的IP就可以发现，IP包还没有到GFW所在的国际出口就已经被电信或者联通的路由器给丢弃了。这就是BGP广播的作用了。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-25%20at%2016.20.56.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-25%20at%2016.20.56.png)
 
 DNS劫持
 
 这也是一种常见的人工检测之后的应对。人工发现一个不和谐网站，然后就把这个网站的域名给加到劫持列表中。其原理是基于DNS与IP协议的弱点，DNS与IP这两个协议都不验证服务器的权威性，而且DNS客户端会盲目地相信第一个收到的答案。所以你去查询facebook.com的话，GFW只要在正确的答案被返回之前抢答了，然后伪装成你查询的DNS服务器向你发错误的答案就可以了。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-25%20at%2016.21.37.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-25%20at%2016.21.37.png)
 
 TCP RST阻断
 
 TCP协议规定，只要看到RST包，连接立马被中断。从浏览器里来看就是连接已经被重置。我想对于这个错误大家都不陌生。据我个人观感，这种封锁方式是GFW目前的主要应对手段。大部分的RST是条件触发的，比如URL中包含某些关键字。目前享受这种待遇的网站就多得去了，著名的有facebook。还有一些网站，会被无条件RST。也就是针对特定的IP和端口，无论包的内容就会触发RST。比较著名的例子是https的wikipedia。GFW在TCP层的应对是利用了IPv4协议的弱点，也就是只要你在网络上，就假装成任何人发包。所以GFW可以很轻易地让你相信RST确实是Google发的，而让Google相信RST是你发的。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-25%20at%2016.22.09.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-25%20at%2016.22.09.png)
 
 封端口
 
@@ -125,7 +125,7 @@ GFW除了自身主体是挂在骨干路由器旁路上的入侵检测设备，�
 
 在进入了封端口阶段之后，还会有继发性的临时性封其他端口的现象，但是这些继发性的封锁具有明显的超时时间，触发了之后（触发条件不是非常明确）会立即被封锁，然后过了一段时间就自动解封。目前对于这一波封SSH/OPENVPN采用的以封端口为明显特征的封锁方式研究尚不深入。可以参考我最近写的一篇文章：[http://fqrouter.tumblr.com/post/45969604783/gfw](http://fqrouter.tumblr.com/post/45969604783/gfw)
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-25%20at%2016.22.52.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-25%20at%2016.22.52.png)
 
 HTTPS间歇性丢包
 
@@ -137,13 +137,13 @@ HTTPS间歇性丢包
 
 基于绕道法的翻墙方式无论是VPN还是SOCKS代理，原理都是类似的。都是以国外有一个代理服务器为前提，然后你与代理服务器通信，代理服务器再与目标服务器通信。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.33.29.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-26%20at%2012.33.29.png)
 
 绕道法对于IP封锁来说，因为最终的IP包是由代理服务器在墙外发出的，所以国内骨干路由封IP并不会产生影响。对于TCP重置来说，因为TCP重置是以入侵检测为前提的，客户端与代理之间的加密通信规避了入侵检测，使得TCP重置不会被触发。
 
 但是对于反DNS污染来说，VPN和SOCKS代理却有不同。基于VPN的翻墙方法，得到正确的DNS解析的结果需要设置一个国外的没有被污染的DNS服务器。然后发UDP请求去解析域名的时候，VPN会用绕道的方式让UDP请求不被劫持地通过GFW。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.33.19.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-26%20at%2012.33.19.png)
 
 但是SOCKS代理和HTTP代理这些更上层的代理协议则可以选择不同的方式。因为代理与应用之间有更紧密的关系，应用程序比如浏览器可以把要访问的服务器的域名直接告诉本地的代理。然后SOCKS代理可以选择不在本地做解析，直接把请求发给墙外的代理服务器。在代理服务器与目标服务器做连接的时候再在代理服务器上做DNS解析，从而避开了GFW的DNS劫持。
 
@@ -151,13 +151,13 @@ VPN与SOCKS代理的另外一个主要区别是应用程序是如何使用上代
 
 应用程序把IP包交给操作系统，操作系统会去决定把包用机器上的哪块网卡发出去。VPN的客户端对于操作系统来说就是一个虚拟出来的网卡。应用程序完全不用知道VPN客户端的存在，操作系统甚至也不需要区分VPN客户端与普通网卡的区别。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.32.28.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-26%20at%2012.32.28.png)
 
 VPN客户端在启动之后会把操作系统的缺省路由改成自己。这样所有的IP包都会经由这块虚拟的网卡发出去。这样VPN就能够再打包成加密的流量发出去（当然线路还是之前的电信线路），发回去的加密流量再解密拆包交还给操作系统。
 
 SOCKS代理等应用层的代理则不同。其流量走不走代理的线路并不是由操作系统使用路由表选择网卡来决定的，而是在应用程序里自己做的。也就是说，对于操作系统来说，使用SOCKS代理的TCP连接和不使用SOCKS代理的TCP连接并没有任何的不同。应用程序自己去选择是直接与目标服务器建立连接，还是与SOCKS代理服务器建立TCP连接，然后由SOCKS代理服务器去建立第二个TCP连接，两个TCP连接的数据由代理服务器中转。
 
-![image](https://github.com/InSec01/Over-the-wall/blob/master/pictures/Screen%20Shot%202016-04-26%20at%2012.32.08.png)
+![](http://static.caogfw.cn/JohnTrump/2017-03-15-Screen%20Shot%202016-04-26%20at%2012.32.08.png)
 
 关于VPN/SOCKS代理，可以参见我博客上的文章：[http://fqrouter.tumblr.com/post/51474945203/socks-vpn](http://fqrouter.tumblr.com/post/51474945203/socks-vpn)
 
